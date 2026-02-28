@@ -3,19 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FarmFlow - Daily Farming Tasks + Weather</title>
+  <title>FarmFlow - Farming Tasks & Weather</title>
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- FullCalendar -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <style>
-    /* Calendar toolbar responsive fixes */
     @media (max-width: 640px) {
       .fc-toolbar.fc-header-toolbar {
         flex-direction: column !important;
@@ -37,7 +31,6 @@
       .fc-toolbar-title {
         font-size: 1.25rem;
         text-align: center;
-        padding: 0.25rem 0;
       }
     }
 
@@ -46,7 +39,6 @@
       .fc .fc-daygrid-day-number { font-size: 0.9rem; }
     }
 
-    /* Touch-friendly targets */
     button, .fc-button, input, textarea {
       min-height: 44px;
       min-width: 44px;
@@ -61,8 +53,7 @@
       animation: pulse-short 0.5s ease-in-out;
     }
 
-    /* Modal scroll handling */
-    #edit-modal > div {
+    #edit-modal > div, #add-from-calendar-modal > div {
       max-height: 90vh;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -94,19 +85,18 @@
       </h2>
       <form id="task-form" class="flex flex-col gap-4 sm:gap-5">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input type="date" id="task-date" required class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"/>
-          <input type="text" id="task-title" placeholder="e.g., Irrigate tomatoes • Check soil pH" required class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"/>
+          <input type="date" id="task-date" required class="px-4 py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"/>
+          <input type="text" id="task-title" placeholder="e.g., Irrigate tomatoes • Check soil pH" required class="px-4 py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-base"/>
         </div>
-        <textarea id="task-notes" placeholder="Notes, observations, reminders... (optional)" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-y min-h-[100px] text-base"></textarea>
+        <textarea id="task-notes" placeholder="Notes, observations, reminders... (optional)" rows="3" class="w-full px-4 py-3.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-y min-h-[100px] text-base"></textarea>
         <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3.5 rounded-lg transition shadow-md flex items-center justify-center gap-2 text-base">
           <i class="fas fa-save"></i> Save Task
         </button>
       </form>
     </section>
 
-    <!-- Calendar + Tasks grid -->
+    <!-- Calendar + Tasks -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8 lg:mb-10">
-
       <!-- Calendar -->
       <section class="lg:col-span-2 bg-white rounded-2xl shadow-xl overflow-hidden border border-green-100 order-2 lg:order-none">
         <div class="p-5 sm:p-6 border-b border-gray-100">
@@ -118,7 +108,7 @@
         <div id="calendar" class="p-3 sm:p-4 min-h-[380px] sm:min-h-[500px] lg:min-h-[580px]"></div>
       </section>
 
-      <!-- Tasks -->
+      <!-- Tasks List -->
       <section class="bg-white rounded-2xl shadow-xl border border-green-100 overflow-hidden order-3 lg:order-none">
         <div class="p-5 sm:p-6 border-b border-gray-100">
           <h2 class="text-xl sm:text-2xl font-semibold text-emerald-800 flex items-center gap-3">
@@ -128,36 +118,53 @@
         </div>
         <div id="task-list" class="p-4 sm:p-6 space-y-4 max-h-[380px] sm:max-h-[480px] lg:max-h-[580px] overflow-y-auto"></div>
       </section>
-
     </div>
 
     <!-- Weather -->
     <section class="bg-white rounded-2xl shadow-xl p-5 sm:p-8 border border-green-100">
       <h2 class="text-xl sm:text-2xl font-semibold text-emerald-800 mb-5 sm:mb-6 flex items-center gap-3">
         <i class="fas fa-cloud-sun-rain text-green-600 text-xl sm:text-2xl"></i>
-        7-Day Farming Weather
+        7-Day Farming Weather (Raver, Maharashtra)
       </h2>
       <div id="weather-container" class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-5"></div>
       <p id="weather-location" class="mt-6 text-center text-gray-600 italic text-sm sm:text-base">
-        Loading weather for Raver, Maharashtra...
+        Loading weather...
       </p>
     </section>
 
   </main>
 
-  <!-- Edit Modal -->
+  <!-- Edit Task Modal -->
   <div id="edit-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4 sm:p-6">
-    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
       <h3 class="text-xl sm:text-2xl font-bold text-emerald-800 mb-5 sm:mb-6 flex items-center gap-3">
-        <i class="fas fa-edit text-green-600 text-xl sm:text-2xl"></i> Edit Task
+        <i class="fas fa-edit text-green-600 text-xl sm:text-2xl"></i>
+        <span id="modal-title">Edit Task</span>
       </h3>
-      <input type="date" id="edit-date" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-green-500 outline-none text-base"/>
-      <input type="text" id="edit-title" placeholder="Task description" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-green-500 outline-none text-base"/>
-      <textarea id="edit-notes" placeholder="Notes, observations..." rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-6 focus:ring-2 focus:ring-green-500 outline-none resize-y min-h-[110px] text-base"></textarea>
+      <input type="date" id="edit-date" class="w-full px-4 py-3.5 text-base border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none sm:text-lg sm:py-4"/>
+      <input type="text" id="edit-title" placeholder="Task description" class="w-full px-4 py-3.5 text-base border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none sm:text-lg sm:py-4"/>
+      <textarea id="edit-notes" placeholder="Notes, observations..." rows="4" class="w-full px-4 py-3.5 text-base border border-gray-300 rounded-lg mb-6 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-y min-h-[110px] sm:text-lg sm:py-4"></textarea>
       <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
-        <button id="save-edit" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-lg font-medium transition min-h-[48px]">Save Changes</button>
-        <button id="delete-task" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-lg font-medium transition min-h-[48px]">Delete</button>
-        <button id="cancel-edit" class="flex-1 bg-gray-200 hover:bg-gray-300 py-3.5 rounded-lg font-medium transition min-h-[48px]">Cancel</button>
+        <button id="save-edit" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-lg font-medium transition min-h-[48px] text-base sm:text-lg">Save Changes</button>
+        <button id="delete-task" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-lg font-medium transition min-h-[48px] text-base sm:text-lg">Delete</button>
+        <button id="cancel-edit" class="flex-1 bg-gray-200 hover:bg-gray-300 py-3.5 rounded-lg font-medium transition min-h-[48px] text-base sm:text-lg">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Task from Calendar Modal -->
+  <div id="add-from-calendar-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4 sm:p-6">
+    <div class="bg-white rounded-2xl shadow-2xl p-5 sm:p-8 w-full max-w-lg mx-auto">
+      <h3 class="text-xl sm:text-2xl font-bold text-emerald-800 mb-5 flex items-center gap-3">
+        <i class="fas fa-plus-circle text-green-600 text-xl sm:text-2xl"></i>
+        Add Task for <span id="selected-date-display"></span>
+      </h3>
+      <input type="hidden" id="add-date-hidden"/>
+      <input type="text" id="add-title" placeholder="e.g., Spray fungicide • Transplant seedlings" required class="w-full px-4 py-3.5 text-base border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none sm:text-lg sm:py-4"/>
+      <textarea id="add-notes" placeholder="Notes, quantities, reminders..." rows="4" class="w-full px-4 py-3.5 text-base border border-gray-300 rounded-lg mb-6 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-y min-h-[110px] sm:text-lg sm:py-4"></textarea>
+      <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <button id="save-add-from-cal" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-lg font-medium transition min-h-[48px] text-base sm:text-lg">Save Task</button>
+        <button id="cancel-add-from-cal" class="flex-1 bg-gray-200 hover:bg-gray-300 py-3.5 rounded-lg font-medium transition min-h-[48px] text-base sm:text-lg">Cancel</button>
       </div>
     </div>
   </div>
