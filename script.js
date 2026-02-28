@@ -1,27 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ── DOM Elements ─────────────────────────────────
-  const calendarEl       = document.getElementById('calendar');
-  const taskForm         = document.getElementById('task-form');
-  const taskListEl       = document.getElementById('task-list');
-  const modal            = document.getElementById('edit-modal');
-  const editDate         = document.getElementById('edit-date');
-  const editTitle        = document.getElementById('edit-title');
-  const editNotes        = document.getElementById('edit-notes');
-  const btnSave          = document.getElementById('save-edit');
-  const btnDelete        = document.getElementById('delete-task');
-  const btnCancel        = document.getElementById('cancel-edit');
+  // ── Elements ─────────────────────────────────────
+  const calendarEl         = document.getElementById('calendar');
+  const taskForm           = document.getElementById('task-form');
+  const taskListEl         = document.getElementById('task-list');
+  const editModal          = document.getElementById('edit-modal');
+  const addModal           = document.getElementById('add-from-calendar-modal');
+  const editDate           = document.getElementById('edit-date');
+  const editTitle          = document.getElementById('edit-title');
+  const editNotes          = document.getElementById('edit-notes');
+  const modalTitle         = document.getElementById('modal-title');
+  const btnSaveEdit        = document.getElementById('save-edit');
+  const btnDelete          = document.getElementById('delete-task');
+  const btnCancelEdit      = document.getElementById('cancel-edit');
 
-  // ── State ────────────────────────────────────────
+  const addDateHidden      = document.getElementById('add-date-hidden');
+  const selectedDateDisplay= document.getElementById('selected-date-display');
+  const addTitle           = document.getElementById('add-title');
+  const addNotes           = document.getElementById('add-notes');
+  const btnSaveAdd         = document.getElementById('save-add-from-cal');
+  const btnCancelAdd       = document.getElementById('cancel-add-from-cal');
+
   let calendar;
   let currentTaskId = null;
   let tasks = loadTasks();
 
-  // ── Calendar Setup ───────────────────────────────
+  // ── Calendar ─────────────────────────────────────
   calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
-    editable: false,
-    selectable: false,
     height: 'auto',
     headerToolbar: {
       start: 'prev,next today',
@@ -33,26 +39,22 @@ document.addEventListener('DOMContentLoaded', () => {
       next:  { text: 'Next →',  click: () => calendar.next()  },
       today: { text: 'Today',   click: () => calendar.today() }
     },
-    buttonText: {
-      today: 'Today',
-      month: 'Month',
-      week:  'Week'
-    },
-    views: {
-      dayGridMonth: { buttonText: 'Month' },
-      timeGridWeek: { buttonText: 'Week'  }
-    },
-    eventClick: (info) => openEditModal(info.event)
+    buttonText: { today: 'Today', month: 'Month', week: 'Week' },
+    eventClick: (info) => openEditModal(info.event),
+    dateClick: (info) => {
+      addDateHidden.value = info.dateStr;
+      selectedDateDisplay.textContent = formatDate(info.dateStr);
+      addTitle.value = '';
+      addNotes.value = '';
+      addModal.classList.remove('hidden');
+    }
   });
   calendar.render();
 
-  // ── Helper Functions ─────────────────────────────
+  // ── Helpers ──────────────────────────────────────
   function loadTasks() {
-    try {
-      return JSON.parse(localStorage.getItem('farmflow_tasks')) || [];
-    } catch {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem('farmflow_tasks')) || []; }
+    catch { return []; }
   }
 
   function saveTasks() {
@@ -76,23 +78,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function formatDate(dateStr) {
     return new Date(dateStr).toLocaleDateString('en-IN', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
     });
   }
 
   function renderTaskList() {
     const today = new Date().toISOString().split('T')[0];
-    const sorted = [...tasks].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sorted = [...tasks].sort((a,b) => new Date(a.date) - new Date(b.date));
 
-    taskListEl.innerHTML = '';
-
-    if (sorted.length === 0) {
-      taskListEl.innerHTML = '<p class="text-center text-gray-500 py-10 italic">No tasks yet — add one above!</p>';
-      return;
-    }
+    taskListEl.innerHTML = sorted.length === 0
+      ? '<p class="text-center text-gray-500 py-10 italic">No tasks yet — add one above or click a date on the calendar!</p>'
+      : '';
 
     sorted.forEach(task => {
       const isToday = task.date === today;
@@ -129,17 +125,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── Add Task ─────────────────────────────────────
+  // ── Main Add Form ────────────────────────────────
   taskForm.addEventListener('submit', e => {
     e.preventDefault();
     const date  = document.getElementById('task-date').value;
     const title = document.getElementById('task-title').value.trim();
     const notes = document.getElementById('task-notes').value.trim();
 
-    if (!date || !title) {
-      alert('Please fill date and title');
-      return;
-    }
+    if (!date || !title) return alert('Date and title are required');
 
     tasks.push({ id: Date.now().toString(), date, title, notes });
     saveTasks();
@@ -148,16 +141,36 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => taskForm.classList.remove('animate-pulse-short'), 500);
   });
 
+  // ── Add from Calendar ────────────────────────────
+  btnSaveAdd.onclick = () => {
+    const date  = addDateHidden.value;
+    const title = addTitle.value.trim();
+    const notes = addNotes.value.trim();
+
+    if (!title) return alert('Please enter a task title');
+
+    tasks.push({ id: Date.now().toString(), date, title, notes });
+    saveTasks();
+    addModal.classList.add('hidden');
+  };
+
+  btnCancelAdd.onclick = () => addModal.classList.add('hidden');
+  addModal.addEventListener('click', e => {
+    if (e.target === addModal) addModal.classList.add('hidden');
+  });
+
   // ── Edit Modal ───────────────────────────────────
   function openEditModal(eventInfo) {
     currentTaskId = eventInfo.id;
     editDate.value  = eventInfo.start ? eventInfo.start.split('T')[0] : '';
     editTitle.value = eventInfo.title || '';
     editNotes.value = eventInfo.extendedProps?.notes || '';
-    modal.classList.remove('hidden');
+    modalTitle.textContent = 'Edit Task';
+    btnDelete.style.display = 'block';
+    editModal.classList.remove('hidden');
   }
 
-  btnSave.onclick = () => {
+  btnSaveEdit.onclick = () => {
     const task = tasks.find(t => t.id === currentTaskId);
     if (task) {
       task.date  = editDate.value;
@@ -165,29 +178,26 @@ document.addEventListener('DOMContentLoaded', () => {
       task.notes = editNotes.value.trim();
       saveTasks();
     }
-    modal.classList.add('hidden');
+    editModal.classList.add('hidden');
   };
 
   btnDelete.onclick = () => {
     if (!confirm('Delete this task permanently?')) return;
     tasks = tasks.filter(t => t.id !== currentTaskId);
     saveTasks();
-    modal.classList.add('hidden');
+    editModal.classList.add('hidden');
   };
 
-  btnCancel.onclick = () => modal.classList.add('hidden');
-
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.classList.add('hidden');
+  btnCancelEdit.onclick = () => editModal.classList.add('hidden');
+  editModal.addEventListener('click', e => {
+    if (e.target === editModal) editModal.classList.add('hidden');
   });
 
-  // ── Weather (Open-Meteo – no key needed) ─────────
+  // ── Weather (Open-Meteo) ─────────────────────────
   async function loadWeather() {
     const container = document.getElementById('weather-container');
     const locEl = document.getElementById('weather-location');
-
-    const lat = 21.25;          // Raver approx
-    const lon = 75.93;
+    const lat = 21.25, lon = 75.93;
     const place = "Raver, Maharashtra";
 
     try {
@@ -211,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (code >= 51 && code <= 67) { icon = '🌧️'; cond = 'Rain'; }
         else if (code >= 80 && code <= 99) { icon = '⛈️'; cond = 'Thunderstorm'; }
         else if (code >= 45 && code <= 48) { icon = '🌫️'; cond = 'Fog'; }
-        else if (code >= 1  && code <= 3)  { icon = '⛅'; cond = 'Cloudy'; }
+        else if (code >= 1 && code <= 3)  { icon = '⛅'; cond = 'Cloudy'; }
 
         const card = document.createElement('div');
         card.className = 'bg-gradient-to-b from-green-50 to-white p-4 rounded-xl border border-green-100 text-center shadow-sm hover:shadow';
@@ -226,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       locEl.textContent = `7-day forecast for ${place} (${new Date().toLocaleTimeString('en-IN')})`;
-
     } catch {
       container.innerHTML = '<p class="col-span-full text-center text-red-600 py-8">Weather unavailable right now</p>';
       locEl.textContent = `Weather for ${place} (offline)`;
