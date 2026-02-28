@@ -170,3 +170,32 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initial load
     renderTaskList();
 });
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',           // good default
+        height: 'auto',                        // ← very important for responsiveness
+        contentHeight: 'auto',
+        aspectRatio: window.innerWidth < 768 ? 0.9 : 1.35,
+        handleWindowResize: true,
+        headerToolbar: {
+            left:   'prev,next today',
+            center: 'title',
+            right:  'dayGridMonth,timeGridWeek'  // remove dayGridDay on mobile if too crowded
+        },
+        views: {
+            dayGridMonth: {
+                dayMaxEventRows: 4          // prevent too many events from overflowing
+            }
+        },
+        // Optional: switch view automatically on small screens
+        windowResize: function(view) {
+            if (window.innerWidth < 640) {
+                calendar.changeView('dayGridMonth');
+            }
+        }
+    });
+    calendar.render();
+});
